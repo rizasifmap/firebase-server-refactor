@@ -112,10 +112,11 @@ limitations under the License.
                             // Adding User data
                             database.ref('users/' + uid).set({
                                 username: "rizasif92",
-                                fullname: "Rizwan Asif",
+                                firstname: "Rizwan",
+                                lastname: "Asif",
                                 phone: user.phoneNumber,
                                 email: "rizwan@mapproject.se",
-                                profile_picture : "none",
+                                profile_picture : 'images/' + imageName,
                                 timestamp : firebase.database.ServerValue.TIMESTAMP,
                             });
                             console.log("new user created", uid);
