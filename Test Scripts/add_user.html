@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2016 Google Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<html>
+<head>
+  <meta charset=utf-8 />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phone Authentication with invisible ReCaptcha</title>
+</head>
+
+<body>
+        <div id="recaptcha-container"></div>
+        <p id="p1">Hello World!</p>
+        
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-auth.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-database.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-storage.js"></script>
+
+        <script type="text/javascript">
+            document.getElementById("p1").innerHTML = "Starting";
+
+            var config = {
+                apiKey: "AIzaSyDSfafvT4-dw57hnOPwMQDUc1diE3d89XQ",
+                authDomain: "map-project-refactor.firebaseapp.com",
+                databaseURL: "https://map-project-refactor.firebaseio.com/",
+                storageBucket: "gs://map-project-refactor.appspot.com"
+            };
+
+            // Rizwan
+            // var phoneNumber = "+46738464450";
+            // var myName = "rizwan"
+
+            // Vidya
+            // var phoneNumber = "+46767508065";
+            // var myName = "vidya"
+
+            // Taha
+            // var phoneNumber = "+46722611311";
+            // var myName = "taha"
+
+            // Harshi
+            var phoneNumber = "+46760334777";
+            var myName = "harshi"
+            
+            var testVerificationCode = "123456";
+
+            app = firebase.initializeApp(config);
+
+            firebase.auth().useDeviceLanguage();
+            firebase.auth().settings.appVerificationDisabledForTesting = true;
+
+            // Setting up the database
+            var database = firebase.database();
+
+            // Setting up storage
+            var storage = firebase.storage();
+            
+            //Setting Recaptcha
+            var appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
+
+            document.getElementById("p1").innerHTML = "Initialization done";
+
+            firebase.auth().signOut().then(function() {
+                // Sign-out successful.
+                console.log("Sign-out successful.");
+            }).catch(function(error) {
+                // An error happened.
+                console.log("Sign-out Unsuccessful.");
+            });
+
+            // Check if user exists, if not add them
+            function checkAndAddUser(user){
+                if (user) {
+                    // User is signed in.
+                    var uid = user.uid;
+                    console.log("User has id: ", uid);
+
+                    // Check if user exisis
+                    database.ref("users/"+uid).once("value").then (function (snapshot) {
+                        if (snapshot.exists()){
+                            const userData = snapshot.val();
+                            console.log("user id already exists!", userData);
+                        }
+                        else{
+                            // Uploading Image
+                            console.log("Adding profile picture");
+
+                            // Naming the stored image
+                            var imageName = 'img_'+uid+'.jpg';
+
+                            // Create a reference to 'img_{uid}.jpg'
+                            var profileRef = storage.ref('images/' + imageName);
+
+                            // Create file metadata including the content type
+                            var metadata = {
+                                contentType: 'image/jpeg',
+                            };
+
+                            // Uploading
+                            const file = 'C:\\Users\\rizwa\\Projects\\Firebase-Server\\Test Scripts\\photo.jpg'
+                            // const filePath = path.join(path.dirname(), 'photo.jpg');
+                            var image = new Blob([file], metadata);
+                            profileRef.put(image, metadata).then(function(snapshot) {
+                                console.log('Image Uploaded');
+                            });
+
+
+                            // Adding User data
+                            database.ref('users/' + uid).set({
+                                username: myName,
+                                firstname: "John",
+                                lastname: "Doe",
+                                phone: user.phoneNumber,
+                                email: myName + "@mapproject.se",
+                                profile_picture : 'images/' + imageName,
+                                timestamp : firebase.database.ServerValue.TIMESTAMP,
+                            });
+                            console.log("new user created", uid);
+                        }
+                    });
+
+                } else {
+                    // No user is signed in.
+                    console.log("User not found!")
+                }
+            };
+
+            // This will run after verification
+            firebase.auth().onAuthStateChanged(function(user) {
+                checkAndAddUser(user);
+            });
+
+            // This verifies the phone
+            firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
+                .then(function (confirmationResult) {
+                // confirmationResult can resolve with the whitelisted testVerificationCode above.
+                document.getElementById("p1").innerHTML = "Verified";
+                console.log("SMS Verification Done");
+
+                return confirmationResult.confirm(testVerificationCode)
+            }).catch(function (error) {
+                // Error; SMS not sent
+                document.getElementById("p1").innerHTML = "Could Not Verify";
+                console.log("SMS Verification Could Not be Completed, ", error);
+            });
+
+            document.getElementById("p1").innerHTML = "Bye World!";
+        </script>
+    
+</body>

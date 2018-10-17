@@ -26,7 +26,7 @@ limitations under the License.
         <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-app.js"></script>
         <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-auth.js"></script>
         <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-database.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-storage.js"></script>
+        <!-- <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-storage.js"></script> -->
 
         <script type="text/javascript">
             document.getElementById("p1").innerHTML = "Starting";
@@ -38,7 +38,18 @@ limitations under the License.
                 storageBucket: "gs://map-project-refactor.appspot.com"
             };
 
+            // Rizwan
             var phoneNumber = "+46738464450";
+
+            // Vidya
+            // var phoneNumber = "+46767508065";
+
+            // Taha
+            // var phoneNumber = "+46722611311";
+
+            // Harshi
+            // var phoneNumber = "+46760334777";
+            
             var testVerificationCode = "123456";
 
             app = firebase.initializeApp(config);
@@ -48,14 +59,33 @@ limitations under the License.
 
             // Setting up the database
             var database = firebase.database();
-
-            // Setting up storage
-            var storage = firebase.storage();
             
             //Setting Recaptcha
             var appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
 
             document.getElementById("p1").innerHTML = "Initialization done";
+
+            // Create a new connection
+            function addConnection(fid, uid){
+                if (uid != fid){
+                    // Check if fid exisis
+                    database.ref("users/"+uid + "/connections").once("value").then (function (snapshot) {
+                        if (snapshot.exists()){
+                            const friendData = snapshot.val();
+                            console.log("friend id already exists as connection: ", friendData);
+                        }
+                        else{
+                            database.ref('users/' + uid + '/connections' ).set({
+                                fid: true,
+                            });
+                            console.log("connection created", uid + " --> " + fid);
+                        }
+                    });
+                }
+                else {
+                    console.log("Attempting to add same fid and uid, aborted.")
+                }
+            };
 
             firebase.auth().signOut().then(function() {
                 // Sign-out successful.
@@ -65,81 +95,24 @@ limitations under the License.
                 console.log("Sign-out Unsuccessful.");
             });
 
-            // Check if user exists, if not add them
-            function checkAndAddUser(user){
-                if (user) {
-                    // User is signed in.
-                    var uid = user.uid;
-                    console.log("User has id: ", uid);
-
-                    // Check if user exisis
-                    database.ref("users/"+uid).once("value").then (function (snapshot) {
-                        if (snapshot.exists()){
-                            const userData = snapshot.val();
-                            console.log("user id already exists!", userData);
-                        }
-                        else{
-                            // Uploading Image
-                            console.log("Adding profile picture");
-
-                            // Naming the stored image
-                            var imageName = 'img_'+uid+'.jpg';
-
-                            // Create a reference to 'img_{uid}.jpg'
-                            var profileRef = storage.ref('images/' + imageName);
-
-                            // Create file metadata including the content type
-                            var metadata = {
-                                contentType: 'image/jpeg',
-                            };
-
-                            // Uploading
-                            const file = 'C:\\Users\\rizwa\\Projects\\Firebase-Server\\Test Scripts\\photo.jpg'
-                            // const filePath = path.join(path.dirname(), 'photo.jpg');
-                            var image = new Blob([file], metadata);
-                            profileRef.put(image, metadata).then(function(snapshot) {
-                                console.log('Image Uploaded');
-                            });
-
-
-                            // Adding User data
-                            database.ref('users/' + uid).set({
-                                username: "rizasif92",
-                                firstname: "Rizwan",
-                                lastname: "Asif",
-                                phone: user.phoneNumber,
-                                email: "rizwan@mapproject.se",
-                                profile_picture : 'images/' + imageName,
-                                timestamp : firebase.database.ServerValue.TIMESTAMP,
-                            });
-                            console.log("new user created", uid);
-                        }
-                    });
-
-                } else {
-                    // No user is signed in.
-                    console.log("User not found!")
-                }
-            };
-
-            // This will run after verification
-            firebase.auth().onAuthStateChanged(function(user) {
-                checkAndAddUser(user);
-            });
-
             // This verifies the phone
             firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
                 .then(function (confirmationResult) {
                 // confirmationResult can resolve with the whitelisted testVerificationCode above.
                 document.getElementById("p1").innerHTML = "Verified";
                 console.log("SMS Verification Done");
-
                 return confirmationResult.confirm(testVerificationCode)
             }).catch(function (error) {
                 // Error; SMS not sent
                 document.getElementById("p1").innerHTML = "Could Not Verify";
                 console.log("SMS Verification Could Not be Completed, ", error);
             });
+
+            // This will run after verification
+            firebase.auth().onAuthStateChanged(function(user) {
+                addConnection("1Ip0CKgvRhMtgmOUPPWtb2UScqy2" ,user.uid);
+            });
+
 
             document.getElementById("p1").innerHTML = "Bye World!";
         </script>

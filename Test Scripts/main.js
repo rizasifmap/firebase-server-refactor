@@ -2,8 +2,12 @@ var express = require('express');
 var app = express();
 var path = require("path");
 
-app.get('/', function (req, res) {
-  res.sendFile(path.join(__dirname+'/test.html'));
+app.get('/add', function (req, res) {
+  res.sendFile(path.join(__dirname+'/add_user.html'));
+})
+
+app.get('/addcon', function (req, res) {
+  res.sendFile(path.join(__dirname+'/add_connection.html'));
 })
 
 var server = app.listen(8081, function () {

@@ -34,3 +34,16 @@ exports.deleteUserDbNode = functions.auth.user().onDelete((user) => {
 
     return del_ref;
 });
+
+// When user adds a connection, the connection should add user too
+// Listens for new messages added to /connections/:uid/connections and creates a
+// similar connection of the message to /connections/:fid/connections
+exports.addCorrespondingConnection = functions.database.ref('/messages/{uid}/connections')
+    .onCreate((snapshot, context) => {
+      // Grab the current value of what was written to the Realtime Database.
+      const original = snapshot.val();
+      console.log('Adding sequel connection', context.params.uid, original);
+
+      // return snapshot.ref.parent.child('uppercase').set(uppercase);
+      return true;
+    });
