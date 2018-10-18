@@ -36,14 +36,60 @@ exports.deleteUserDbNode = functions.auth.user().onDelete((user) => {
 });
 
 // When user adds a connection, the connection should add user too
-// Listens for new messages added to /connections/:uid/connections and creates a
-// similar connection of the message to /connections/:fid/connections
-exports.addCorrespondingConnection = functions.database.ref('/messages/{uid}/connections')
+// Listens for new messages added to /users/:uid/connections and creates a
+// similar connection of the message to /users/:fid/connections
+exports.addCorrespondingConnection = functions.database.ref('/users/{uid}/connections/{fid}')
     .onCreate((snapshot, context) => {
-      // Grab the current value of what was written to the Realtime Database.
-      const original = snapshot.val();
-      console.log('Adding sequel connection', context.params.uid, original);
 
-      // return snapshot.ref.parent.child('uppercase').set(uppercase);
-      return true;
+      // Grab the current value of what was written to the Realtime Database.
+      var key;
+      var fid;
+
+      key = snapshot.key;
+      fid = snapshot.child("fid").val();
+
+      var ref = admin.database().ref("users/" + fid + "/connections/" + key);
+      let add_ref = ref.set({
+        fid: context.params.uid,
+        timestamp: admin.database.ServerValue.TIMESTAMP,
+      }).then(function() {
+        console.log('Adding sequel connection: ', fid + " --> " + context.params.uid);
+        return true
+      })
+      .catch(function(error) {
+        console.log("Error adding fid key from database: ", key);
+        console.log('Error adding db data:', error);
+        return false
+      });
+
+      return add_ref;
+    });
+
+// When user removes a connection, the connection should remove user too
+// Listens for deleted messages added to /users/:uid/connections and deletes the
+// similar connection of the message to /users/:fid/connections
+exports.deleteCorrespondingConnection = functions.database.ref('/users/{uid}/connections/{fid}')
+    .onDelete((snapshot, context) => {
+      
+      // Grab the current value of what was written to the Realtime Database.
+      var key;
+      var fid;
+
+      key = snapshot.key;
+      fid = snapshot.child("fid").val();
+
+      console.log('Deleting sequel connection: ', fid + " --> " + context.params.uid);
+
+      let del_ref = admin.database().ref("users/" + fid + "/connections/" + key);
+      del_ref.remove().then(function() {
+        console.log("fid connection ref deletion from database complete: ", key);
+        return true
+      })
+      .catch(function(error) {
+        console.log("Error deleting fid key from database: ", key);
+        console.log('Error deleting db data:', error);
+        return false
+      });
+
+      return del_ref;
     });

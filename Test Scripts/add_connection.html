@@ -69,14 +69,15 @@ limitations under the License.
             function addConnection(fid, uid){
                 if (uid != fid){
                     // Check if fid exisis
-                    database.ref("users/"+uid + "/connections").once("value").then (function (snapshot) {
+                    database.ref("users/"+uid + "/connections").orderByChild("fid").equalTo(fid).once("value",snapshot => {
                         if (snapshot.exists()){
                             const friendData = snapshot.val();
                             console.log("friend id already exists as connection: ", friendData);
                         }
                         else{
-                            database.ref('users/' + uid + '/connections' ).set({
-                                fid: true,
+                            database.ref('users/' + uid + '/connections' ).push().set({
+                                fid: fid,
+                                timestamp: firebase.database.ServerValue.TIMESTAMP,
                             });
                             console.log("connection created", uid + " --> " + fid);
                         }
@@ -110,7 +111,7 @@ limitations under the License.
 
             // This will run after verification
             firebase.auth().onAuthStateChanged(function(user) {
-                addConnection("1Ip0CKgvRhMtgmOUPPWtb2UScqy2" ,user.uid);
+                addConnection("b4b51MKQxtg88IyAcdmXSXJo28I3" ,user.uid);
             });
 
 
