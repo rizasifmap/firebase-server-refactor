@@ -10,6 +10,10 @@ app.get('/addcon', function (req, res) {
   res.sendFile(path.join(__dirname+'/add_connection.html'));
 })
 
+app.get('/search', function (req, res) {
+  res.sendFile(path.join(__dirname+'/search.html'));
+})
+
 var server = app.listen(8081, function () {
    var host = server.address().address
    var port = server.address().port
