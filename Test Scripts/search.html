@@ -69,9 +69,8 @@ limitations under the License.
             function search(uname){
                 console.log("Starting Search for: ", uname);
 
-                // .startAt(uname).endAt(uname + "\uf8ff")
                 database.ref("users").orderByChild("username").startAt(uname).endAt(uname + "\uf8ff").on("value",snapshot => {
-                     //go through each item found and print out the emails
+                     //go through each item found
                      snapshot.forEach(function(childSnapshot) {
                         var key = childSnapshot.key;
                         var childData = childSnapshot.val();

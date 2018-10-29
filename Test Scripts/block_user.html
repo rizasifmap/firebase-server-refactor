@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2016 Google Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<html>
+<head>
+  <meta charset=utf-8 />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phone Authentication with invisible ReCaptcha</title>
+</head>
+
+<body>
+        <div id="recaptcha-container"></div>
+        <p id="p1">Hello World!</p>
+        
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-auth.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-database.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-storage.js"></script>
+
+        <script type="text/javascript">
+            document.getElementById("p1").innerHTML = "Starting";
+
+            var config = {
+                apiKey: "AIzaSyDSfafvT4-dw57hnOPwMQDUc1diE3d89XQ",
+                authDomain: "map-project-refactor.firebaseapp.com",
+                databaseURL: "https://map-project-refactor.firebaseio.com/",
+                storageBucket: "gs://map-project-refactor.appspot.com"
+            };
+
+            // Rizwan
+            var phoneNumber = "+46738464450";
+            var myName = "rizwan"
+
+            // Vidya
+            // var phoneNumber = "+46767508065";
+            // var myName = "vidya"
+
+            // Taha
+            // var phoneNumber = "+46722611311";
+            // var myName = "hata"
+
+            // Harshi
+            // var phoneNumber = "+46760334777";
+            // var myName = "harshi"
+            
+            var testVerificationCode = "123456";
+
+            app = firebase.initializeApp(config);
+
+            firebase.auth().useDeviceLanguage();
+            firebase.auth().settings.appVerificationDisabledForTesting = true;
+
+            // Setting up the database
+            var database = firebase.database();
+
+            // Setting up storage
+            var storage = firebase.storage();
+            
+            //Setting Recaptcha
+            var appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
+
+            document.getElementById("p1").innerHTML = "Initialization done";
+
+            firebase.auth().signOut().then(function() {
+                // Sign-out successful.
+                console.log("Sign-out successful.");
+            }).catch(function(error) {
+                // An error happened.
+                console.log("Sign-out Unsuccessful.");
+            });
+            
+            function moveFbRecord(oldRef, newRef) {    
+                return Promise((resolve, reject) => {
+                    oldRef.once('value').then(snap => {
+                        return newRef.set(snap.val());
+                    }).then(() => {
+                        return oldRef.set(null);
+                    }).then(() => {
+                        console.log('Done!');
+                        resolve();
+                    }).catch(err => {
+                        console.log(err.message);
+                        reject();
+                    });
+                })
+            }
+
+            // Check if user exists, if not add them
+            function checkAndRemoveUser(uid, fid){
+                if (uid) {
+                    // User is signed in.
+                    console.log("User has id: ", uid);
+                    console.log("User has fid: ", fid);
+
+                    // Check if user exisis
+                    database.ref("users/"+fid).once("value").then (function (snapshot) {
+                        if (snapshot.exists()){
+                            const userData = snapshot.val();
+                            console.log("user id exists, checking if exists as connection", userData);
+                            database.ref("users/"+uid + "/connections").orderByChild("fid").equalTo(fid).once("value",snapshot => {
+                                if (snapshot.exists()){
+                                    fdata = snapshot.val();
+                                    var key;
+                                    snapshot.forEach(function(childSnapshot) {
+                                        key = childSnapshot.key;
+                                    });
+                                    console.log("fid exists as connection ", key);
+                                    oldRef = database.ref("users/"+uid + "/connections/"+ key);
+                                    newRef = database.ref("users/"+uid + "/blocked/" + key);
+
+                                    oldRef.once('value').then(snap => {
+                                        return newRef.set(snap.val());
+                                    }).then(() => {
+                                        return oldRef.set(null);
+                                    }).then(() => {
+                                        console.log('Done!');
+                                    }).catch(err => {
+                                        console.log(err.message);
+                                    });
+                                }
+                                else{
+                                    console.log("fid doesn't exists");
+                                }
+                            });
+                        }
+                        else{
+                            // User id not found
+                            console.log("User doesn't exists");
+                        }
+                    });
+
+                } else {
+                    // No user is signed in.
+                    console.log("User not found!")
+                }
+            };
+
+            // This will run after verification
+            firebase.auth().onAuthStateChanged(function(user) {
+                checkAndRemoveUser(user.uid, "b4b51MKQxtg88IyAcdmXSXJo28I3");
+            });
+
+            // This verifies the phone
+            firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
+                .then(function (confirmationResult) {
+                // confirmationResult can resolve with the whitelisted testVerificationCode above.
+                document.getElementById("p1").innerHTML = "Verified";
+                console.log("SMS Verification Done");
+
+                return confirmationResult.confirm(testVerificationCode)
+            }).catch(function (error) {
+                // Error; SMS not sent
+                document.getElementById("p1").innerHTML = "Could Not Verify";
+                console.log("SMS Verification Could Not be Completed, ", error);
+            });
+
+            document.getElementById("p1").innerHTML = "Bye World!";
+        </script>
+    
+</body>
