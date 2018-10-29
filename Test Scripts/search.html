@@ -66,18 +66,37 @@ limitations under the License.
             document.getElementById("p1").innerHTML = "Initialization done";
 
             // Create a new connection
-            function search(uname){
+            function search(uname, user){
                 console.log("Starting Search for: ", uname);
 
                 database.ref("users").orderByChild("username").startAt(uname).endAt(uname + "\uf8ff").on("value",snapshot => {
                      //go through each item found
+
+                     var array = [];
                      snapshot.forEach(function(childSnapshot) {
                         var key = childSnapshot.key;
                         var childData = childSnapshot.val();
                         
                         //this will be the actual value found
-                        console.log(childData);
-                        console.log(key);
+                        // console.log(childData);
+                        // console.log(key);
+                        
+                        var problem = false;
+                        var blockedbyList = childData['blockedby'];
+                        if ( typeof blockedbyList !== 'undefined' && blockedbyList ){
+                            Object.keys(blockedbyList).forEach(function(key2) {
+                                var data = blockedbyList[key2];
+                                var fid = data['fid'];
+                                if(fid == user.uid){
+                                    console.log("Blocked id found: ", key);
+                                    problem = true;
+                                }
+                            });
+                        }
+
+                        if (!problem){
+                            console.log(key);
+                        }
                     });
                 });
             };
@@ -105,7 +124,7 @@ limitations under the License.
 
             // This will run after verification
             firebase.auth().onAuthStateChanged(function(user) {
-                search('hata');
+                search('ha', user);
             });
 
 
