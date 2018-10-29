@@ -93,3 +93,35 @@ exports.deleteCorrespondingConnection = functions.database.ref('/users/{uid}/con
 
       return del_ref;
     });
+
+// When user blocks a connection, the user should be added to the blocked by list of connection
+// Listens for messages added to /users/:uid/blocked and adds the
+// similar connection of the message to /users/:fid/blockedby
+exports.blockedByConnection = functions.database.ref('/users/{uid}/blocked/{conn}')
+    .onCreate((snapshot, context) => {
+      
+      // Grab the current value of what was written to the Realtime Database.
+      var key;
+      var fid;
+
+      key = snapshot.key;
+      fid = snapshot.child("fid").val();
+
+      console.log('Blocking sequel connection: ', fid + " --> " + context.params.uid);
+
+      let add_ref = admin.database().ref("users/" + fid + "/blockedby/" + key);
+      add_ref.set({
+        fid: context.params.uid,
+        timestamp: admin.database.ServerValue.TIMESTAMP,
+      }).then(function() {
+        console.log('Blocking sequel connection: ', fid + " --> " + context.params.uid);
+        return true
+      })
+      .catch(function(error) {
+        console.log("Error blocking fid key from database: ", key);
+        console.log('Error blocking db data:', error);
+        return false
+      });
+
+      return add_ref;
+    });
