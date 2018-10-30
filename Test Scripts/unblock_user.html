@@ -26,7 +26,7 @@ limitations under the License.
         <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-app.js"></script>
         <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-auth.js"></script>
         <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-database.js"></script>
-        <!-- <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-storage.js"></script> -->
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-storage.js"></script>
 
         <script type="text/javascript">
             document.getElementById("p1").innerHTML = "Starting";
@@ -40,15 +40,19 @@ limitations under the License.
 
             // Rizwan
             var phoneNumber = "+46738464450";
+            var myName = "rizwan";
 
             // Vidya
             // var phoneNumber = "+46767508065";
+            // var myName = "vidya"
 
             // Taha
             // var phoneNumber = "+46722611311";
+            // var myName = "hata"
 
             // Harshi
             // var phoneNumber = "+46760334777";
+            // var myName = "harshi"
             
             var testVerificationCode = "123456";
 
@@ -59,34 +63,14 @@ limitations under the License.
 
             // Setting up the database
             var database = firebase.database();
+
+            // Setting up storage
+            var storage = firebase.storage();
             
             //Setting Recaptcha
             var appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
 
             document.getElementById("p1").innerHTML = "Initialization done";
-
-            // Create a new connection
-            function addConnection(fid, uid){
-                if (uid != fid){
-                    // Check if fid exisis
-                    database.ref("users/"+uid + "/connections").orderByChild("fid").equalTo(fid).once("value",snapshot => {
-                        if (snapshot.exists()){
-                            const friendData = snapshot.val();
-                            console.log("friend id already exists as connection: ", friendData);
-                        }
-                        else{
-                            database.ref('users/' + uid + '/connections' ).push().set({
-                                fid: fid,
-                                timestamp: firebase.database.ServerValue.TIMESTAMP,
-                            });
-                            console.log("connection created", uid + " --> " + fid);
-                        }
-                    });
-                }
-                else {
-                    console.log("Attempting to add same fid and uid, aborted.")
-                }
-            };
 
             firebase.auth().signOut().then(function() {
                 // Sign-out successful.
@@ -95,6 +79,68 @@ limitations under the License.
                 // An error happened.
                 console.log("Sign-out Unsuccessful.");
             });
+            
+            function moveFbRecord(oldRef, newRef) {    
+                return Promise((resolve, reject) => {
+                    oldRef.once('value').then(snap => {
+                        return newRef.set(snap.val());
+                    }).then(() => {
+                        return oldRef.set(null);
+                    }).then(() => {
+                        console.log('Done!');
+                        resolve();
+                    }).catch(err => {
+                        console.log(err.message);
+                        reject();
+                    });
+                })
+            }
+
+            // Check if user exists, if not add them
+            function unBlockUser(uid, fid){
+                if (uid) {
+                    // User is signed in.
+                    console.log("User has id: ", uid);
+                    console.log("User has fid: ", fid);
+
+                    // Check if user exisis
+                    database.ref("users/"+fid).once("value").then (function (snapshot) {
+                        if (snapshot.exists()){
+                            const userData = snapshot.val();
+                            console.log("user id exists, checking if exists as blocked", userData);
+                            database.ref("users/"+uid + "/blocked").orderByChild("fid").equalTo(fid).once("value",snapshot => {
+                                if (snapshot.exists()){
+                                    var key;
+                                    snapshot.forEach(function(childSnapshot) {
+                                        key = childSnapshot.key;
+                                    });
+                                    console.log("fid exists as connection ", key);
+                                    let del_ref = database.ref("users/"+uid + "/blocked/" + key);
+                                    del_ref.remove().then(() => {
+                                        console.log("Deletion Complete");
+                                    });
+                                }
+                                else{
+                                    console.log("fid doesn't exists");
+                                }
+                            });
+                        }
+                        else{
+                            // User id not found
+                            console.log("User doesn't exists");
+                        }
+                    });
+
+                } else {
+                    // No user is signed in.
+                    console.log("User not found!")
+                }
+            };
+
+            // This will run after verification
+            firebase.auth().onAuthStateChanged(function(user) {
+                unBlockUser(user.uid, "b4b51MKQxtg88IyAcdmXSXJo28I3");
+            });
 
             // This verifies the phone
             firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
@@ -102,18 +148,13 @@ limitations under the License.
                 // confirmationResult can resolve with the whitelisted testVerificationCode above.
                 document.getElementById("p1").innerHTML = "Verified";
                 console.log("SMS Verification Done");
+
                 return confirmationResult.confirm(testVerificationCode)
             }).catch(function (error) {
                 // Error; SMS not sent
                 document.getElementById("p1").innerHTML = "Could Not Verify";
                 console.log("SMS Verification Could Not be Completed, ", error);
             });
-
-            // This will run after verification
-            firebase.auth().onAuthStateChanged(function(user) {
-                addConnection("b4b51MKQxtg88IyAcdmXSXJo28I3" ,user.uid);
-            });
-
 
             document.getElementById("p1").innerHTML = "Bye World!";
         </script>

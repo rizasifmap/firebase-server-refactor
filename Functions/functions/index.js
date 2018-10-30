@@ -125,3 +125,32 @@ exports.blockedByConnection = functions.database.ref('/users/{uid}/blocked/{conn
 
       return add_ref;
     });
+
+// When user unblocks a connection, the user should be removed from blocked by list of connection
+// Listens for messages added to /users/:uid/blocked and removed the
+// similar connection of the message from /users/:fid/blockedby
+exports.clearBlockedByConnection = functions.database.ref('/users/{uid}/blocked/{conn}')
+    .onDelete((snapshot, context) => {
+      
+      // Grab the current value of what was written to the Realtime Database.
+      var key;
+      var fid;
+
+      key = snapshot.key;
+      fid = snapshot.child("fid").val();
+
+      console.log('unBlocking sequel connection: ', fid + " --> " + context.params.uid);
+
+      let del_ref = admin.database().ref("users/" + fid + "/blockedby/" + key);
+      del_ref.remove().then(function() {
+        console.log("fid unblock ref deletion from database complete: ", key);
+        return true
+      })
+      .catch(function(error) {
+        console.log("Error deleting fid key from database: ", key);
+        console.log('Error deleting db data:', error);
+        return false
+      });
+
+      return del_ref;
+    });
