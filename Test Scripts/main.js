@@ -22,6 +22,10 @@ app.get('/unblock', function (req, res) {
   res.sendFile(path.join(__dirname+'/unblock_user.html'));
 })
 
+app.get('/addaddr', function (req, res) {
+  res.sendFile(path.join(__dirname+'/add_address.html'));
+})
+
 var server = app.listen(8081, function () {
    var host = server.address().address
    var port = server.address().port
