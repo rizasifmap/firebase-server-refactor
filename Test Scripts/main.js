@@ -26,6 +26,10 @@ app.get('/addaddr', function (req, res) {
   res.sendFile(path.join(__dirname+'/add_address.html'));
 })
 
+app.get('/locacc', function (req, res) {
+  res.sendFile(path.join(__dirname+'/loc_acc_to.html'));
+})
+
 var server = app.listen(8081, function () {
    var host = server.address().address
    var port = server.address().port
