@@ -154,3 +154,39 @@ exports.clearBlockedByConnection = functions.database.ref('/users/{uid}/blocked/
 
       return del_ref;
     });
+
+
+// When user provides location access to a connection, the location should be added to the LocAccess list of connection
+// Listens for messages added to /users/:uid/locAccess/:aid and adds the
+// similar connection of the message to /users/:fid/LocAccess
+exports.accessByConnection = functions.database.ref('/users/{uid}/addresses/{lid}/accessTo/{aid}')
+.onCreate((snapshot, context) => {
+  
+  // Grab the current value of what was written to the Realtime Database.
+  var key;
+  var fid;
+  var lid;
+
+  key = snapshot.key;
+  fid = snapshot.child("fid").val();
+  lid = snapshot.ref.parent.parent.key;
+
+  console.log('Adding sequel access right: ', fid + " --> " + context.params.uid + " --> " + lid);
+
+  let add_ref = admin.database().ref("users/" + fid + "/locAccess/" + key);
+  add_ref.set({
+    fid: context.params.uid,
+    lid: lid,
+    timestamp: admin.database.ServerValue.TIMESTAMP,
+  }).then(function() {
+    console.log('Sequel access right added: ', fid + " --> " + context.params.uid + " --> " + lid);
+    return true
+  })
+  .catch(function(error) {
+    console.log("Error adding sequel access right: ", key);
+    console.log('Error adding sequel access right:', error);
+    return false
+  });
+
+  return add_ref;
+});

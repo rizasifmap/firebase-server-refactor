@@ -84,6 +84,8 @@ limitations under the License.
                                     push_ref.push({
                                         fid: fid,
                                         timestamp: firebase.database.ServerValue.TIMESTAMP,
+                                    }).then(() => {
+                                        console.log("Address access granted!");
                                     });
                                 }
                                 else{
