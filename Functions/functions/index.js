@@ -190,3 +190,34 @@ exports.accessByConnection = functions.database.ref('/users/{uid}/addresses/{lid
 
   return add_ref;
 });
+
+// When user blocks an address access to a connection, the address should be removed from AccessTo list of connection
+// Listens for messages added to /users/:uid/addresses/:lid/accessTo and remove the
+// similar connection from /users/:fid/locAccess
+exports.revokeLocationAccess = functions.database.ref('/users/{uid}/addresses/{lid}/accessTo/{aid}')
+    .onDelete((snapshot, context) => {
+      
+      // Grab the current value of what was written to the Realtime Database.
+      var key;
+      var fid;
+      var lid;
+      
+      key = snapshot.key;
+      fid = snapshot.child("fid").val();
+      lid = snapshot.ref.parent.parent.key;
+      
+      console.log('Removing sequel access right: ', fid + " --> " + context.params.uid + " --> " + lid);
+
+      let del_ref = admin.database().ref("users/" + fid + "/locAccess/" + key);
+      del_ref.remove().then(function() {
+        console.log("fid deletion from locAccess complete: ", key);
+        return true
+      })
+      .catch(function(error) {
+        console.log("Error deleting loc key from database: ", key);
+        console.log('Error deleting db data:', error);
+        return false
+      });
+
+      return del_ref;
+    });
