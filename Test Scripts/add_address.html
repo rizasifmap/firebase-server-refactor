@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2016 Google Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<html>
+<head>
+  <meta charset=utf-8 />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phone Authentication with invisible ReCaptcha</title>
+</head>
+
+<body>
+        <div id="recaptcha-container"></div>
+        <p id="p1">Hello World!</p>
+        
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-auth.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-database.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/5.0.0/firebase-storage.js"></script>
+
+        <script type="text/javascript">
+            document.getElementById("p1").innerHTML = "Starting";
+
+            var config = {
+                apiKey: "AIzaSyDSfafvT4-dw57hnOPwMQDUc1diE3d89XQ",
+                authDomain: "map-project-refactor.firebaseapp.com",
+                databaseURL: "https://map-project-refactor.firebaseio.com/",
+                storageBucket: "gs://map-project-refactor.appspot.com"
+            };
+
+            // Rizwan
+            var phoneNumber = "+46738464450";
+
+            // Vidya
+            // var phoneNumber = "+46767508065";
+
+            // Taha
+            // var phoneNumber = "+46722611311";
+
+            // Harshi
+            // var phoneNumber = "+46760334777";
+            
+            var testVerificationCode = "123456";
+
+            app = firebase.initializeApp(config);
+
+            firebase.auth().useDeviceLanguage();
+            firebase.auth().settings.appVerificationDisabledForTesting = true;
+
+            // Setting up the database
+            var database = firebase.database();
+            
+            // Setting up storage
+            var storage = firebase.storage();
+            
+            //Setting Recaptcha
+            var appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
+
+            document.getElementById("p1").innerHTML = "Initialization done";
+
+            function addAddress(
+                uid,
+                aptnum,
+                streetname,
+                city,
+                region,
+                country,
+                crossroad,
+                floor,
+                buidling,
+                landmarkDescription,
+                pubAccess,
+                photo,
+                gps
+            ){
+                if (uid) {
+                    // User is signed in.
+                    console.log("User has id: ", uid);
+
+                    // Check if user exisis
+                    database.ref("users/"+uid).once("value").then (function (snapshot) {
+                        if (!snapshot.exists()){
+                            console.log("user id doesn't exists!", userData);
+                        }
+                        else{
+                            let push_ref = database.ref('users/' + uid + '/addresses' );
+                            push_ref.push({
+                                aptnum: aptnum,
+                                streetname: streetname,
+                                city: city,
+                                region: region,
+                                country: country,
+                                crossroad: crossroad,
+                                floor: floor,
+                                buidling: buidling,
+                                landmarkDescription: landmarkDescription,
+                                pubAccess: pubAccess,
+                                photo: "",
+                                gps: gps,
+                                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                            }).then((snap) => {
+                                // Uploading Image
+                                console.log("Adding profile picture");
+                                node_name = snap.key;
+                                console.log("New key generated: ", node_name);
+                                
+                                // Naming the stored image
+                                var imageName = 'img_'+node_name+'.jpg';
+                                
+                                // Create a reference to 'img_{uid}.jpg'
+                                var imgRef = storage.ref('images/' + imageName);
+                                
+                                // Create file metadata including the content type
+                                var metadata = {
+                                    contentType: 'image/jpeg',
+                                };
+                                
+                                // Uploading
+                                const file = photo;
+                                var image = new Blob([file], metadata);
+                                imgRef.put(image, metadata).then(function(snapshot) {
+                                    console.log('Image Uploaded');
+                                });
+
+                                //Updating name in push ref
+                                let update_ref = database.ref('users/' + uid + '/addresses/' + node_name);
+                                var updates = {};
+                                updates['photo'] = 'images/' + imageName;
+                                update_ref.update(updates);
+                            }).then(() => {
+                                console.log("Done!");
+                            });
+                        }
+                    });
+
+                } else {
+                    // No user is signed in.
+                    console.log("Invalid uid")
+                }
+            };
+
+            firebase.auth().signOut().then(function() {
+                // Sign-out successful.
+                console.log("Sign-out successful.");
+            }).catch(function(error) {
+                // An error happened.
+                console.log("Sign-out Unsuccessful.");
+            });
+
+            // This verifies the phone
+            firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
+                .then(function (confirmationResult) {
+                // confirmationResult can resolve with the whitelisted testVerificationCode above.
+                document.getElementById("p1").innerHTML = "Verified";
+                console.log("SMS Verification Done");
+                return confirmationResult.confirm(testVerificationCode)
+            }).catch(function (error) {
+                // Error; SMS not sent
+                document.getElementById("p1").innerHTML = "Could Not Verify";
+                console.log("SMS Verification Could Not be Completed, ", error);
+            });
+
+            // This will run after verification
+            firebase.auth().onAuthStateChanged(function(user) {
+                addAddress(
+                user.uid,
+                "001",
+                "002",
+                "003",
+                "004",
+                "005",
+                "006",
+                "007",
+                "008",
+                "009",
+                true,
+                'C:\\Users\\rizwa\\Projects\\Firebase-Server\\Test Scripts\\photo.jpg',
+                "(26.56,37.73,0.5,11008865)"
+                );
+            });
+
+
+            document.getElementById("p1").innerHTML = "Bye World!";
+        </script>
+    
+</body>
